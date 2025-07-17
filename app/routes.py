@@ -155,25 +155,51 @@ def criar_email():
         return jsonify(error="falha ao salvar email"), 500
     return jsonify(id=novo.id_email), 201
 
-@bp.route("/emails", methods=["GET"])
+@bp.route('/emails', methods=['GET'])
 def listar_emails():
+    """
+    Lista emails com filtros e paginação:
+      - status: RECEBIDO, EM_ANDAMENTO, RESPONDIDO, ATRASADO
+      - responsavel: id_responsavel (int)
+      - page, size: paginação (defaults: page=1, size=20)
+    """
     q = Email.query
-    status = request.args.get("status")
-    resp_id = request.args.get("responsavel")
+    status = request.args.get('status')
+    responsavel = request.args.get('responsavel', type=int)
+    page = request.args.get('page', type=int, default=1)
+    size = request.args.get('size', type=int, default=20)
+
     if status:
-        q = q.filter(Email.tp_status == status)
-    if resp_id:
-        q = q.filter(Email.id_responsavel == int(resp_id))
-    itens = [
-        {
-            "id_email": e.id_email,
-            "assunto": e.assunto,
-            "tp_status": e.tp_status.value,
-            "id_responsavel": e.id_responsavel
-        }
-        for e in q.all()
-    ]
-    return jsonify(items=itens), 200
+        try:
+            q = q.filter(Email.tp_status == StatusEmail[status])
+        except KeyError:
+            return jsonify(error='status inválido'), 400
+
+    if responsavel:
+        q = q.filter(Email.id_responsavel == responsavel)
+
+    pag = q.order_by(Email.id_email).paginate(page=page, per_page=size, error_out=False)
+    items = []
+    for e in pag.items:
+        items.append({
+            'id_email':      e.id_email,
+            'cd_sei':        e.cd_sei,
+            'titulo':        e.titulo,
+            'assunto':       e.assunto,
+            'tp_status':     e.tp_status.value,
+            'resposta':      e.resposta,
+            'prazo_resposta': e.prazo_resposta.isoformat() if e.prazo_resposta else None,
+            'id_setor':      e.id_setor,
+            'id_responsavel': e.id_responsavel,
+            'tp_email':      e.tp_email
+        })
+
+    return jsonify(
+        page=pag.page,
+        per_page=pag.per_page,
+        total=pag.total,
+        items=items
+    ), 200
 
 @bp.route("/emails/<int:id>", methods=["GET"])
 def obter_email(id):
@@ -388,3 +414,4 @@ def rota_sei_interessado():
 
     interessados = [row.get("Interessado") for row in items if "Interessado" in row]
     return jsonify(interessados=interessados), 200
+

@@ -3,17 +3,22 @@ import pyzmail
 from flask import current_app
 from app.models import db, Email, StatusEmail
 import chardet
+import ssl
 
 def processar_emails():
     cfg    = current_app.config
     host   = cfg["IMAP_HOST"]
+    port   = cfg.get("IMAP_PORT", 993)
     user   = cfg["EMAIL_USER"]
     pwd    = cfg["EMAIL_PASS"]
     folder = cfg.get("IMAP_FOLDER", "INBOX")
 
+    # Contexto TLS sem verificação de certificado
+    ssl_ctx = ssl._create_unverified_context()
+
     processed = 0
     try:
-        with IMAPClient(host) as server:
+        with IMAPClient(host, port=port, ssl=True, ssl_context=ssl_ctx) as server:
             server.login(user, pwd)
             server.select_folder(folder)
             uids = server.search(['UNSEEN'])
@@ -21,7 +26,7 @@ def processar_emails():
             for uid in uids:
                 raw = server.fetch([uid], ['BODY[]'])[uid][b'BODY[]']
                 msg = pyzmail.PyzMessage.factory(raw)
-                assunto  = msg.get_subject()
+                assunto   = msg.get_subject()
                 remetente = msg.get_addresses('from')[0][1]
 
                 corpo = None

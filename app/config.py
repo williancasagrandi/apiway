@@ -12,3 +12,4 @@ class Config:
     EMAIL_PASS   = os.getenv("EMAIL_PASS")
     IMAP_HOST    = os.getenv("IMAP_HOST")
     IMAP_FOLDER  = os.getenv("IMAP_FOLDER", "INBOX")
+    IMAP_PORT = os.getenv("IMAP_PORT")

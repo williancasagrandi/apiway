@@ -103,7 +103,6 @@ class Obrigacao(db.Model):
         ForeignKey("email.id_email")
     )
 
-# Tabela de relacionamento
 rl_obrigacoes_correspondencia = Table(
     'rl_obrigacoes_correspondencia',
     db.metadata,
@@ -111,7 +110,6 @@ rl_obrigacoes_correspondencia = Table(
     Column('id_obrigacao', Integer, ForeignKey('obrigacao.id_obrigacao'), primary_key=True)
 )
 
-# Relacionamentos (opcional)
 Obrigacao.correspondencias = db.relationship(
     "Email",
     secondary=rl_obrigacoes_correspondencia,
