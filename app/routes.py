@@ -1,5 +1,3 @@
-# app/routes.py
-
 from flask import Blueprint, request, jsonify, current_app
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime
