@@ -211,16 +211,29 @@ def obter_email(id):
 def atualizar_email(id):
     data = request.get_json()
     e = Email.query.get_or_404(id)
-    for field in ("cd_sei","remetente","assunto","conteudo","tp_status",
-                  "resposta","prazo_resposta","id_setor","id_responsavel","tp_email"):
-        if field in data:
-            setattr(e, field, data[field])
+
+    if "cd_sei" in data:
+        e.cd_sei = data["cd_sei"]
+
+    if "prazo_resposta" in data:
+        try:
+            e.prazo_resposta = datetime.fromisoformat(data["prazo_resposta"]).date()
+        except ValueError:
+            return jsonify(error="formato de prazo_resposta inválido, use YYYY-MM-DD"), 400
+
+    if "id_setor" in data:
+        e.id_setor = data["id_setor"]
+
+    if "tp_email" in data:
+        e.tp_email = data["tp_email"]
+
     try:
         db.session.commit()
     except SQLAlchemyError as err:
-        current_app.logger.error(f"[DB] atualizar_email: {err}")
+        current_app.logger.error(f"[DB] atualizar_email: {err}", exc_info=True)
         db.session.rollback()
         return jsonify(error="falha ao atualizar email"), 500
+
     return jsonify(message="email atualizado"), 200
 
 
