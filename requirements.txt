@@ -1,0 +1,9 @@
+Flask
+chardet
+flask_migrate
+Flask-SQLAlchemy
+psycopg2-binary
+imapclient
+pyzmail36
+python-dotenv
+pydantic
