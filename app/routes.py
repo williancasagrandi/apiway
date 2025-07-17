@@ -157,71 +157,62 @@ def criar_email():
 
 @bp.route('/emails', methods=['GET'])
 def listar_emails():
-    """
-    Lista emails com filtros e paginação:
-      - status: RECEBIDO, EM_ANDAMENTO, RESPONDIDO, ATRASADO
-      - responsavel: id_responsavel (int)
-      - page, size: paginação (defaults: page=1, size=20)
-    """
     q = Email.query
-    status = request.args.get('status')
+    status      = request.args.get('status')
     responsavel = request.args.get('responsavel', type=int)
-    page = request.args.get('page', type=int, default=1)
-    size = request.args.get('size', type=int, default=20)
+    page        = request.args.get('page', type=int, default=1)
+    size        = request.args.get('size', type=int, default=20)
 
     if status:
         try:
             q = q.filter(Email.tp_status == StatusEmail[status])
         except KeyError:
             return jsonify(error='status inválido'), 400
-
     if responsavel:
         q = q.filter(Email.id_responsavel == responsavel)
 
     pag = q.order_by(Email.id_email).paginate(page=page, per_page=size, error_out=False)
-    items = []
-    for e in pag.items:
-        items.append({
+    items = [
+        {
             'id_email':      e.id_email,
             'cd_sei':        e.cd_sei,
-            'titulo':        e.titulo,
+            'remetente':     e.remetente,
             'assunto':       e.assunto,
+            'conteudo':      e.conteudo,
             'tp_status':     e.tp_status.value,
             'resposta':      e.resposta,
             'prazo_resposta': e.prazo_resposta.isoformat() if e.prazo_resposta else None,
             'id_setor':      e.id_setor,
             'id_responsavel': e.id_responsavel,
             'tp_email':      e.tp_email
-        })
-
-    return jsonify(
-        page=pag.page,
-        per_page=pag.per_page,
-        total=pag.total,
-        items=items
-    ), 200
+        }
+        for e in pag.items
+    ]
+    return jsonify(page=pag.page, per_page=pag.per_page, total=pag.total, items=items), 200
 
 @bp.route("/emails/<int:id>", methods=["GET"])
 def obter_email(id):
     e = Email.query.get_or_404(id)
     return jsonify(
-        id_email=e.id_email,
-        cd_sei=e.cd_sei,
-        titulo=e.titulo,
-        assunto=e.assunto,
-        tp_status=e.tp_status.value,
-        resposta=e.resposta,
-        prazo_resposta=e.prazo_resposta.isoformat() if e.prazo_resposta else None,
-        id_setor=e.id_setor,
-        id_responsavel=e.id_responsavel,
-        tp_email=e.tp_email
+        id_email        = e.id_email,
+        cd_sei          = e.cd_sei,
+        remetente       = e.remetente,
+        assunto         = e.assunto,
+        conteudo        = e.conteudo,
+        tp_status       = e.tp_status.value,
+        resposta        = e.resposta,
+        prazo_resposta  = e.prazo_resposta.isoformat() if e.prazo_resposta else None,
+        id_setor        = e.id_setor,
+        id_responsavel  = e.id_responsavel,
+        tp_email        = e.tp_email
     ), 200
 
 @bp.route("/emails/<int:id>", methods=["PUT"])
 def atualizar_email(id):
     data = request.get_json()
     e = Email.query.get_or_404(id)
-    for field in ("cd_sei","titulo","assunto","tp_status","resposta","prazo_resposta","id_setor","id_responsavel","tp_email"):
+    for field in ("cd_sei","remetente","assunto","conteudo","tp_status",
+                  "resposta","prazo_resposta","id_setor","id_responsavel","tp_email"):
         if field in data:
             setattr(e, field, data[field])
     try:
@@ -231,32 +222,6 @@ def atualizar_email(id):
         db.session.rollback()
         return jsonify(error="falha ao atualizar email"), 500
     return jsonify(message="email atualizado"), 200
-
-@bp.route("/emails/<int:id>", methods=["DELETE"])
-def deletar_email(id):
-    e = Email.query.get_or_404(id)
-    try:
-        db.session.delete(e)
-        db.session.commit()
-    except SQLAlchemyError as err:
-        current_app.logger.error(f"[DB] deletar_email: {err}")
-        db.session.rollback()
-        return jsonify(error="falha ao deletar email"), 500
-    return "", 204
-
-@bp.route("/emails/<int:id>/responder", methods=["POST"])
-def responder_email(id):
-    data = request.get_json()
-    e = Email.query.get_or_404(id)
-    e.resposta = data.get("resposta")
-    e.tp_status = StatusEmail.RESPONDIDO
-    try:
-        db.session.commit()
-    except SQLAlchemyError as err:
-        current_app.logger.error(f"[DB] responder_email: {err}")
-        db.session.rollback()
-        return jsonify(error="falha ao responder email"), 500
-    return jsonify(message="email respondido"), 200
 
 
 @bp.route("/obrigacoes", methods=["POST"])
@@ -404,7 +369,6 @@ def rota_sei_interessado():
     try:
         items = sei.pesquisar_por_interessado(nome, orgao)
     except requests.HTTPError as e:
-        # registra status code e corpo para debugging
         status = e.response.status_code
         current_app.logger.error(f"[SEI] status {status}: {e.response.text[:200]}")
         return jsonify(error=f"SEI retornou {status}"), 502

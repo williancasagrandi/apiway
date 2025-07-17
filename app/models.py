@@ -48,17 +48,17 @@ class Setor(db.Model):
         nullable=False
     )
 
-# Tabela email
 class Email(db.Model):
     __tablename__   = "email"
     id_email        = Column(Integer, primary_key=True)
     cd_sei          = Column(String(100))
-    titulo          = Column(String(255))
+    remetente       = Column(String(255), nullable=False)
     assunto         = Column(String(255))
     tp_status       = Column(
         PgEnum(StatusEmail, name="statusemail"),
         default=StatusEmail.RECEBIDO
     )
+    conteudo        = Column(Text)
     resposta        = Column(Text)
     prazo_resposta  = Column(Date)
     id_setor        = Column(

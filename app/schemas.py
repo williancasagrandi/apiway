@@ -1,6 +1,6 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr
 from typing import Optional
-from datetime import datetime
+from datetime import date, datetime
 from enum import Enum
 
 class PerfilUsuario(str, Enum):
@@ -19,19 +19,37 @@ class UsuarioOut(BaseModel):
     nm_responsavel: str
     email: EmailStr
     tp_perfil: PerfilUsuario
+
     class Config:
         orm_mode = True
 
 class EmailCreate(BaseModel):
     cd_sei: Optional[str]
-    titulo: Optional[str]
+    remetente: str
     assunto: Optional[str]
+    conteudo: Optional[str]
     tp_status: Optional[str]
     resposta: Optional[str]
     prazo_resposta: Optional[date]
     id_setor: Optional[int]
     id_responsavel: Optional[int]
     tp_email: Optional[str]
+
+class EmailOut(BaseModel):
+    id_email: int
+    cd_sei: Optional[str]
+    remetente: str
+    assunto: Optional[str]
+    conteudo: Optional[str]
+    tp_status: str
+    resposta: Optional[str]
+    prazo_resposta: Optional[date]
+    id_setor: Optional[int]
+    id_responsavel: Optional[int]
+    tp_email: Optional[str]
+
+    class Config:
+        orm_mode = True
 
 class ObrigacaoCreate(BaseModel):
     nm_tarefa: str
@@ -45,5 +63,6 @@ class ObrigacaoCreate(BaseModel):
     duracao: Optional[int]
     dt_limite: Optional[date]
     id_email: Optional[int]
+
     class Config:
         orm_mode = True
